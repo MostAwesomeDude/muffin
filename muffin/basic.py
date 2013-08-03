@@ -1,5 +1,6 @@
 from muffin.core import Cat, Exactly, Null, Red
 
+
 def String(s):
     """
     Match every member of the string in turn, returning the entire string.

@@ -21,6 +21,7 @@ def kleene(bottom):
 
     def first(f):
         cache = {}
+
         def second(x):
             def z(*args, **kwargs):
                 k = key(args, kwargs)
@@ -113,9 +114,9 @@ def derivative(l, c):
     elif isinstance(l, Cat):
         # Must be lazy.
         return Alt(
-                Lazy(Cat, Lazy(derivative, l.first, c), Lazy(const, l.second)),
-                Lazy(Cat, Lazy(Delta, l.first), Lazy(derivative, l.second, c)),
-            )
+            Lazy(Cat, Lazy(derivative, l.first, c), Lazy(const, l.second)),
+            Lazy(Cat, Lazy(Delta, l.first), Lazy(derivative, l.second, c)),
+        )
     elif isinstance(l, Alt):
         # Must be lazy.
         return Alt(Lazy(derivative, l.first, c), Lazy(derivative, l.second, c))
@@ -195,15 +196,6 @@ def parses(l, s):
 
 def matches(l, s):
     return bool(parses(l, s))
-
-
-def string(s):
-    if not s:
-        return Null(set())
-    parser = Exactly(s[0])
-    for c in s[1:]:
-        parser = Cat(parser, Exactly(c))
-    return parser
 
 
 def patch(lazy, obj):
