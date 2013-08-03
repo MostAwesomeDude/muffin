@@ -72,13 +72,20 @@ class Lazy(object):
         self._thunk = f, args
 
     def __repr__(self):
-        return "%r(%r)" % self._thunk
+        if self.value is None:
+            return "%r(%r)" % self._thunk
+        else:
+            return repr(self.value)
 
     def __hash__(self):
         # Hash the only thing that is constant and hashable on this class.
         return hash(id(self))
 
     def __pretty__(self, p, cycle):
+        if self.value is not None:
+            p.pretty(self.value)
+            return
+
         if cycle:
             p.text("Lazy(...)")
             return
