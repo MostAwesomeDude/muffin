@@ -1,6 +1,8 @@
 from collections import namedtuple
 from functools import wraps
 
+from pretty import pprint
+
 
 def key(args, kwargs):
     return args, frozenset(kwargs.iteritems())
@@ -8,16 +10,16 @@ def key(args, kwargs):
 
 def kleene(bottom):
     """
-   Kleene's fixed point.
+    Kleene's fixed point.
 
-   Ascend from a bottom value to a recursively-defined value. Usage is
-   similar to a general fixed-point combinator, like U, Y, or Z, but with
-   memoization and an explicit bottom value. This decorator can thus be used
-   to deal with ill-founded recursion, as long as the values involved are
-   sufficiently pure; if this decorator sees a value twice under the same
-   circumstances, it will "bottom out" and ensure that the computation
-   terminates eventually.
-   """
+    Ascend from a bottom value to a recursively-defined value. Usage is
+    similar to a general fixed-point combinator, like U, Y, or Z, but with
+    memoization and an explicit bottom value. This decorator can thus be used
+    to deal with ill-founded recursion, as long as the values involved are
+    sufficiently pure; if this decorator sees a value twice under the same
+    circumstances, it will "bottom out" and ensure that the computation
+    terminates eventually.
+    """
 
     def first(f):
         cache = {}
@@ -59,6 +61,9 @@ class Named(object):
     def __repr__(self):
         return self.name
 
+    def __pretty__(self, p, cycle):
+        p.text(self.name)
+
 
 class Lazy(object):
     value = None
@@ -73,10 +78,46 @@ class Lazy(object):
         # Hash the only thing that is constant and hashable on this class.
         return hash(id(self))
 
+    def __pretty__(self, p, cycle):
+        if cycle:
+            p.text("Lazy(...)")
+            return
+
+        p.text("Lazy(")
+        p.text(self._thunk[0].__name__)
+        p.text(",")
+        p.breakable()
+        p.pretty(self._thunk[1])
+        p.text(")")
+
     def force(self):
         if self.value is None:
             f, args = self._thunk
             self.value = f(*args)
+
+
+def nt(*args):
+    """
+    Hax namedtuples.
+    """
+
+    def f(self, p, cycle):
+        name = type(self).__name__,
+        if cycle:
+            p.text("%s(...)" % name)
+
+        with p.group(1, "%s(" % name, ")"):
+            for i, field in enumerate(self._fields):
+                val = getattr(self, field)
+                if i:
+                    p.text(",")
+                    p.breakable()
+                p.text("%s=" % field)
+                p.pretty(val)
+
+    cls = namedtuple(*args)
+    cls.__pretty__ = f
+    return cls
 
 
 def force(value):
@@ -88,13 +129,13 @@ def force(value):
 
 Patch = Named("Patch")
 Empty = Named("Empty")
-Null = namedtuple("Null", "ts")
-Exactly = namedtuple("Exactly", "x")
-Red = namedtuple("Red", "l, f")
-Cat = namedtuple("Cat", "first, second")
-Alt = namedtuple("Alt", "first, second")
-Rep = namedtuple("Rep", "l")
-Delta = namedtuple("Delta", "l")
+Null = nt("Null", "ts")
+Exactly = nt("Exactly", "x")
+Red = nt("Red", "l, f")
+Cat = nt("Cat", "first, second")
+Alt = nt("Alt", "first, second")
+Rep = nt("Rep", "l")
+Delta = nt("Delta", "l")
 
 
 def const(x):
@@ -190,7 +231,7 @@ def trees(f):
 def parses(l, s):
     for c in s:
         l = compact(derivative(l, c))
-        print l
+        pprint(l)
     return trees(l)
 
 
