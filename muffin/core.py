@@ -112,6 +112,7 @@ def nt(*args):
         name = type(self).__name__,
         if cycle:
             p.text("%s(...)" % name)
+            return
 
         with p.group(1, "%s(" % name, ")"):
             for i, field in enumerate(self._fields):
