@@ -354,9 +354,8 @@ def matches(l, s):
 
 def patch(lazy, obj):
     f, args = lazy._thunk
-    if args[0] is Patch:
-        args = obj,
-        lazy._thunk = f, args
+    if Patch in args:
+        lazy.value = obj
 
 
 def tie(obj):
