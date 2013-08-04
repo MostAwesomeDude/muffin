@@ -234,12 +234,8 @@ class Cat(namedtuple("Cat", "first, second"), PrettyTuple):
 
     def derivative(self, c):
         return Alt(
-            lazy(Cat,
-                 lazy(derivative, self.first, c),
-                 lazy(const, self.second)),
-            lazy(Cat,
-                 lazy(Delta, self.first),
-                 lazy(derivative, self.second, c)),
+            Cat(lazy(derivative, self.first, c), lazy(const, self.second)),
+            Cat(Delta(self.first), lazy(derivative, self.second, c)),
         )
 
     def compact(self):
@@ -296,12 +292,11 @@ class Rep(namedtuple("Rep", "l"), PrettyTuple):
     def derivative(self, c):
         # Cat needs to be lazy here too, since the inner language might not
         # yet be forced. Remember that Rep is lazy too!
-        return Red(Cat(lazy(derivative, self.l, c), self), lambda x: (x,))
+        return Red(Cat(lazy(derivative, self.l, c), self), tuple)
 
     def compact(self):
-        if self.x is Empty:
+        if self.l is Empty:
             return Null(frozenset())
-        # Must be lazy.
         return Rep(lazy(compact, self.l))
 
     def trees(self, f):
