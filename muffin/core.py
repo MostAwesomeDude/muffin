@@ -103,12 +103,16 @@ class Lazy(object):
             self.value = f(*args)
 
 
-def nt(*args):
-    """
-    Hax namedtuples.
-    """
+def force(value):
+    while isinstance(value, Lazy):
+        value.force()
+        value = value.value
+    return value
 
-    def f(self, p, cycle):
+
+class PrettyTuple(object):
+
+    def __pretty__(self, p, cycle):
         name = type(self).__name__,
         if cycle:
             p.text("%s(...)" % name)
@@ -123,27 +127,177 @@ def nt(*args):
                 p.text("%s=" % field)
                 p.pretty(val)
 
-    cls = namedtuple(*args)
-    cls.__pretty__ = f
-    return cls
-
-
-def force(value):
-    while isinstance(value, Lazy):
-        value.force()
-        value = value.value
-    return value
-
 
 Patch = Named("Patch")
-Empty = Named("Empty")
-Null = nt("Null", "ts")
-Exactly = nt("Exactly", "x")
-Red = nt("Red", "l, f")
-Cat = nt("Cat", "first, second")
-Alt = nt("Alt", "first, second")
-Rep = nt("Rep", "l")
-Delta = nt("Delta", "l")
+
+
+class Empty(Named, PrettyTuple):
+    """
+    The empty set.
+    """
+
+    def derivative(self, c):
+        return self
+
+    def compact(self):
+        return self
+
+    def trees(self, f):
+        return frozenset()
+
+
+Empty = Empty("Empty")
+
+
+class Null(namedtuple("Null", "ts"), PrettyTuple):
+    """
+    The null set, representing a match with the null string.
+
+    Yields terminals when parsing.
+    """
+
+    def derivative(self, c):
+        return Empty
+
+    def compact(self):
+        return self
+
+    def trees(self, f):
+        return self.ts
+
+
+class Exactly(namedtuple("Exactly", "c"), PrettyTuple):
+    """
+    Exactly a single terminal.
+    """
+
+    def derivative(self, c):
+        if self.c == c:
+            return Null(frozenset([c]))
+        else:
+            return Empty
+
+    def compact(self):
+        return self
+
+    def trees(self, f):
+        return frozenset()
+
+
+class Red(namedtuple("Red", "l, f"), PrettyTuple):
+    """
+    A reduction on languages.
+
+    Yields a mapping of input data to output data when parsing.
+    """
+
+    def derivative(self, c):
+        return Red(derivative(self.l, c), self.f)
+
+    def compact(self):
+        if isinstance(self.l, Null):
+            return Null(frozenset(self.f(t) for t in self.l.ts))
+        return Red(compact(self.l), self.f)
+
+    def trees(self, f):
+        return frozenset(self.f(x) for x in f(self.l))
+
+
+class Cat(namedtuple("Cat", "first, second"), PrettyTuple):
+    """
+    Concatenation of parsers.
+
+    Yields the product of its components when parsing.
+
+    This object's fields must be lazy.
+    """
+
+    def derivative(self, c):
+        return Alt(
+            Lazy(Cat,
+                 Lazy(derivative, self.first, c),
+                 Lazy(const, self.second)),
+            Lazy(Cat,
+                 Lazy(Delta, self.first),
+                 Lazy(derivative, self.second, c)),
+        )
+
+    def compact(self):
+        if Empty in self:
+            return Empty
+        if isinstance(self.first, Null):
+            return Red(compact(self.second), lambda x: set([self.first.ts + x]))
+        if isinstance(self.second, Null):
+            return Red(compact(self.first), lambda x: set([x + self.second.ts]))
+        return Cat(Lazy(compact, self.first), Lazy(compact, self.second))
+
+    def trees(self, f):
+        return set((x, y) for x in f(self.first) for y in f(self.second))
+
+
+class Alt(namedtuple("Alt", "first, second"), PrettyTuple):
+    """
+    Alternation or union of parsers.
+
+    Yields all succeeding components when parsing.
+
+    This object's fields must be lazy.
+    """
+
+    def derivative(self, c):
+        return Alt(Lazy(derivative, self.first, c), Lazy(derivative, self.second, c))
+
+    def compact(self):
+        if self.first == Empty:
+            return compact(self.second)
+        elif self.second == Empty:
+            return compact(self.first)
+        return Alt(Lazy(compact, self.first), Lazy(compact, self.second))
+
+    def trees(self, f):
+        return f(self.first) | f(self.second)
+
+class Rep(namedtuple("Rep", "l"), PrettyTuple):
+    """
+    Kleene star of a parser.
+
+    Parses all repetitions, but only yields the least repetition when emitting
+    final parse trees.
+
+    This object's fields must be lazy.
+    """
+
+    def derivative(self, c):
+        # Cat needs to be lazy here too, since the inner language might not
+        # yet be forced. Remember that Rep is lazy too!
+        return Red(Cat(Lazy(derivative, self.l, c), self), lambda x: (x,))
+
+    def compact(self):
+        if self.x is Empty:
+            return Null(frozenset())
+        # Must be lazy.
+        return Rep(Lazy(compact, self.l))
+
+    def trees(self, f):
+        return frozenset()
+
+
+class Delta(namedtuple("Delta", "l"), PrettyTuple):
+    """
+    A parser which is null if its component parses null, and empty otherwise.
+
+    This object's fields must be lazy.
+    """
+
+    def derivative(self, c):
+        return Empty
+
+
+    def compact(self):
+        return Delta(Lazy(compact, self.l))
+
+    def trees(self, f):
+        return f(self.l)
 
 
 def const(x):
@@ -152,87 +306,18 @@ def const(x):
 
 @memo
 def derivative(l, c):
-    l = force(l)
-    if l is Empty or isinstance(l, Null) or isinstance(l, Delta):
-        return Empty
-    elif isinstance(l, Exactly):
-        if l.x == c:
-            return Null(frozenset([c]))
-        else:
-            return Empty
-    elif isinstance(l, Cat):
-        # Must be lazy.
-        return Alt(
-            Lazy(Cat, Lazy(derivative, l.first, c), Lazy(const, l.second)),
-            Lazy(Cat, Lazy(Delta, l.first), Lazy(derivative, l.second, c)),
-        )
-    elif isinstance(l, Alt):
-        # Must be lazy.
-        return Alt(Lazy(derivative, l.first, c), Lazy(derivative, l.second, c))
-    elif isinstance(l, Rep):
-        return Red(Cat(derivative(l.l, c), l), lambda x: (x,))
-    elif isinstance(l, Red):
-        return Red(derivative(l.l, c), l.f)
-    assert False, "Can't classify %r" % l
+    return force(l).derivative(c)
 
 
 @memo
 def compact(l):
-    l = force(l)
-    if isinstance(l, Cat):
-        if Empty in l:
-            return Empty
-        if isinstance(l.first, Null):
-            return Red(compact(l.second), lambda x: set([l.first.ts + x]))
-        if isinstance(l.second, Null):
-            return Red(compact(l.first), lambda x: set([x + l.second.ts]))
-        # Must be lazy.
-        return Cat(Lazy(compact, l.first), Lazy(compact, l.second))
-    if isinstance(l, Alt):
-        if l.first == Empty:
-            return compact(l.second)
-        elif l.second == Empty:
-            return compact(l.first)
-        # Must be lazy.
-        return Alt(Lazy(compact, l.first), Lazy(compact, l.second))
-    if isinstance(l, Rep):
-        if l.x is Empty:
-            return Null(frozenset())
-        # Must be lazy.
-        return Rep(Lazy(compact, l.l))
-    if isinstance(l, Red):
-        if isinstance(l.l, Null):
-            return Null(frozenset([l.f(t) for t in l.l.ts]))
-        return Red(compact(l.l), l.f)
-    if isinstance(l, Delta):
-        # Must be lazy.
-        return Delta(Lazy(compact, l.l))
-    return l
+    return force(l).compact()
 
 
 @kleene(set())
 def trees(f):
     def inner(l):
-        l = force(l)
-        if l is Empty:
-            return set()
-        elif isinstance(l, Null):
-            return l.ts
-        elif isinstance(l, Delta):
-            return f(l.l)
-        elif isinstance(l, Exactly):
-            return set()
-        elif isinstance(l, Alt):
-            return f(l.first) | f(l.second)
-        elif isinstance(l, Cat):
-            # Use a genexp to not waste too much space.
-            return set((x, y) for x in f(l.first) for y in f(l.second))
-        elif isinstance(l, Red):
-            # Same idea here.
-            return set(l.f(x) for x in f(l.l))
-        elif isinstance(l, Rep):
-            return set()
-        assert False, "Can't classify %r" % l
+        return force(l).trees(f)
     return inner
 
 
