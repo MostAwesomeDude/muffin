@@ -110,7 +110,11 @@ def force(value):
     return value
 
 
-def is_lazy(value):
+def could_be_lazy(value):
+    """
+    Conservative laziness check.
+    """
+
     return isinstance(value, (Lazy, Alt, Cat, Delta, Rep))
 
 
@@ -121,7 +125,7 @@ def lazy(f, *args):
     Only makes lazy objects if the arguments need to be lazily handled.
     """
 
-    if any(is_lazy(arg) for arg in args):
+    if any(could_be_lazy(arg) for arg in args):
         return Lazy(f, *args)
     return f(*args)
 
@@ -313,7 +317,6 @@ class Delta(namedtuple("Delta", "l"), PrettyTuple):
 
     def derivative(self, c):
         return Empty
-
 
     def compact(self):
         return Delta(lazy(compact, self.l))
