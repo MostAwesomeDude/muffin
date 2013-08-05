@@ -1,7 +1,22 @@
 from unittest import TestCase
 
-from muffin.basic import String
-from muffin.core import parses
+from muffin.basic import Optional, String
+from muffin.core import parses, Cat, Exactly
+
+
+class TestOptional(TestCase):
+
+    def test_yes(self):
+        l = Cat(Optional(Exactly("a")), Exactly("b"))
+        i = "ab"
+        e = set(["ab"])
+        self.assertEqual(parses(l, i), e)
+
+    def test_no(self):
+        l = Cat(Optional(Exactly("a")), Exactly("b"))
+        i = "b"
+        e = set(["b"])
+        self.assertEqual(parses(l, i), e)
 
 
 class TestString(TestCase):

@@ -1,4 +1,12 @@
-from muffin.core import Cat, Exactly, Null, Red
+from muffin.core import Alt, Cat, Exactly, Null, Red
+
+
+def Optional(l):
+    """
+    Match either the given language, or the null string.
+    """
+
+    return Alt(l, Null(frozenset()))
 
 
 def String(s):
