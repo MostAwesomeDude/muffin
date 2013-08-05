@@ -4,6 +4,12 @@ from functools import wraps
 from pretty import pprint
 
 
+class Recursion(Exception):
+    """
+    Yo dawg.
+    """
+
+
 def key(args, kwargs):
     return args, frozenset(kwargs.iteritems())
 
@@ -41,15 +47,22 @@ def kleene(bottom):
 
 def memo(f):
     cache = {}
+    stack = []
 
     @wraps(f)
     def inner(*args, **kwargs):
         k = key(args, kwargs)
         if k in cache:
             v = cache[k]
+        elif k in stack:
+            raise Recursion()
         else:
-            v = f(*args, **kwargs)
-            cache[k] = v
+            try:
+                stack.append(k)
+                v = f(*args, **kwargs)
+                cache[k] = v
+            finally:
+                stack.pop()
         return v
     return inner
 
@@ -115,7 +128,7 @@ def could_be_lazy(value):
     Conservative laziness check.
     """
 
-    return isinstance(value, (Lazy, Alt, Cat, Delta, Rep))
+    return isinstance(value, (Lazy, Alt, Cat, Rep))
 
 
 def lazy(f, *args):
@@ -159,6 +172,9 @@ class Empty(Named, PrettyTuple):
     def derivative(self, c):
         return self
 
+    def nullable(self, f):
+        return False
+
     def compact(self):
         return self
 
@@ -179,6 +195,9 @@ class Null(namedtuple("Null", "ts"), PrettyTuple):
     def derivative(self, c):
         return Empty
 
+    def nullable(self, f):
+        return True
+
     def compact(self):
         return self
 
@@ -197,6 +216,9 @@ class Exactly(namedtuple("Exactly", "c"), PrettyTuple):
         else:
             return Empty
 
+    def nullable(self, f):
+        return False
+
     def compact(self):
         return self
 
@@ -213,6 +235,9 @@ class Red(namedtuple("Red", "l, f"), PrettyTuple):
 
     def derivative(self, c):
         return Red(derivative(self.l, c), self.f)
+
+    def nullable(self, f):
+        return f(self.l)
 
     def compact(self):
         if isinstance(self.l, Null):
@@ -233,10 +258,15 @@ class Cat(namedtuple("Cat", "first, second"), PrettyTuple):
     """
 
     def derivative(self, c):
-        return Alt(
-            Cat(lazy(derivative, self.first, c), lazy(const, self.second)),
-            Cat(Delta(self.first), lazy(derivative, self.second, c)),
-        )
+        l = Cat(lazy(derivative, self.first, c), self.second)
+
+        if nullable(self.first):
+            return Alt(l, lazy(derivative, self.second, c))
+        else:
+            return l
+
+    def nullable(self, f):
+        return all(f(l) for l in self)
 
     def compact(self):
         if Empty in self:
@@ -251,7 +281,7 @@ class Cat(namedtuple("Cat", "first, second"), PrettyTuple):
             def g(x):
                 return frozenset((x, t) for t in ts)
             return Red(compact(self.first), g)
-        return Cat(lazy(compact, self.first), lazy(compact, self.second))
+        return Cat(compact(self.first), compact(self.second))
 
     def trees(self, f):
         return set((x, y) for x in f(self.first) for y in f(self.second))
@@ -269,12 +299,15 @@ class Alt(namedtuple("Alt", "first, second"), PrettyTuple):
     def derivative(self, c):
         return Alt(lazy(derivative, self.first, c), lazy(derivative, self.second, c))
 
+    def nullable(self, f):
+        return any(f(l) for l in self)
+
     def compact(self):
         if self.first == Empty:
             return compact(self.second)
         elif self.second == Empty:
             return compact(self.first)
-        return Alt(lazy(compact, self.first), lazy(compact, self.second))
+        return Alt(compact(self.first), compact(self.second))
 
     def trees(self, f):
         return f(self.first) | f(self.second)
@@ -294,30 +327,16 @@ class Rep(namedtuple("Rep", "l"), PrettyTuple):
         # yet be forced. Remember that Rep is lazy too!
         return Red(Cat(lazy(derivative, self.l, c), self), tuple)
 
+    def nullable(self, f):
+        return True
+
     def compact(self):
         if self.l is Empty:
             return Null(frozenset())
-        return Rep(lazy(compact, self.l))
+        return Rep(compact(self.l))
 
     def trees(self, f):
         return frozenset()
-
-
-class Delta(namedtuple("Delta", "l"), PrettyTuple):
-    """
-    A parser which is null if its component parses null, and empty otherwise.
-
-    This object's fields must be lazy.
-    """
-
-    def derivative(self, c):
-        return Empty
-
-    def compact(self):
-        return Delta(lazy(compact, self.l))
-
-    def trees(self, f):
-        return f(self.l)
 
 
 def const(x):
@@ -331,10 +350,20 @@ def derivative(l, c):
 
 @memo
 def compact(l):
-    return force(l).compact()
+    try:
+        return force(l).compact()
+    except Recursion:
+        return l
 
 
-@kleene(set())
+@kleene(False)
+def nullable(f):
+    def inner(l):
+        return force(l).nullable(f)
+    return inner
+
+
+@kleene(frozenset())
 def trees(f):
     def inner(l):
         return force(l).trees(f)
@@ -344,12 +373,13 @@ def trees(f):
 def parses(l, s):
     for c in s:
         l = compact(derivative(l, c))
-        pprint(l)
     return trees(l)
 
 
 def matches(l, s):
-    return bool(parses(l, s))
+    for c in s:
+        l = compact(derivative(l, c))
+    return nullable(l)
 
 
 def patch(lazy, obj):
@@ -362,7 +392,7 @@ def tie(obj):
     s = [obj]
     while s:
         node = s.pop()
-        if not isinstance(node, (Cat, Alt, Rep, Delta)):
+        if not isinstance(node, (Cat, Alt, Rep)):
             continue
         for item in node:
             if isinstance(item, Lazy):
