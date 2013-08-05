@@ -6,16 +6,28 @@ from muffin.core import parses, Cat, Exactly
 
 class TestOptional(TestCase):
 
-    def test_yes(self):
+    def test_yes_leading(self):
         l = Cat(Optional(Exactly("a")), Exactly("b"))
         i = "ab"
         e = set(["ab"])
         self.assertEqual(parses(l, i), e)
 
-    def test_no(self):
+    def test_no_leading(self):
         l = Cat(Optional(Exactly("a")), Exactly("b"))
         i = "b"
         e = set(["b"])
+        self.assertEqual(parses(l, i), e)
+
+    def test_yes_trailing(self):
+        l = Cat(Exactly("a"), Optional(Exactly("b")))
+        i = "ab"
+        e = set(["ab"])
+        self.assertEqual(parses(l, i), e)
+
+    def test_no_trailing(self):
+        l = Cat(Exactly("a"), Optional(Exactly("b")))
+        i = "a"
+        e = set(["a"])
         self.assertEqual(parses(l, i), e)
 
 
