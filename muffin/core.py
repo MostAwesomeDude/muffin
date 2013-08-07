@@ -186,6 +186,27 @@ class Empty(Named, PrettyTuple):
 Empty = Empty("Empty")
 
 
+class Any(Named, PrettyTuple):
+    """
+    Any terminal.
+    """
+
+    def derivative(self, c):
+        return Null(frozenset([c]))
+
+    def nullable(self, f):
+        return False
+
+    def compact(self):
+        return self
+
+    def trees(self, f):
+        return frozenset()
+
+
+Any = Any("Any")
+
+
 class Null(namedtuple("Null", "ts"), PrettyTuple):
     """
     The null set, representing a match with the null string.

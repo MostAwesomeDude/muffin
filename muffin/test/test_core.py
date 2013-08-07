@@ -1,9 +1,15 @@
 from unittest import TestCase
 
-from muffin.core import compact, derivative, Alt, Empty, Exactly, Null
+from muffin.core import compact, derivative, Alt, Any, Empty, Exactly, Null
 
 
 class TestDerivative(TestCase):
+
+    def test_any(self):
+        l = Any
+        c = "c"
+        expected = Null(frozenset(["c"]))
+        self.assertEqual(derivative(l, c), expected)
 
     def test_exactly_matching(self):
         l = Exactly("c")
