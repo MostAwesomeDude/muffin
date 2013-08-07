@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from muffin.basic import Optional, String
+from muffin.cups import Optional, String
 from muffin.pan import parses, Cat, Exactly
 
 
