@@ -5,6 +5,9 @@ from operator import or_
 from pretty import pprint
 
 
+fs = frozenset
+
+
 class Recursion(Exception):
     """
     Yo dawg.
@@ -12,7 +15,7 @@ class Recursion(Exception):
 
 
 def key(args, kwargs):
-    return args, frozenset(kwargs.iteritems())
+    return args, fs(kwargs.iteritems())
 
 
 def kleene(bottom):
@@ -180,7 +183,7 @@ class Empty(Named, PrettyTuple):
         return self
 
     def trees(self, f):
-        return frozenset()
+        return fs()
 
 
 Empty = Empty("Empty")
@@ -192,7 +195,7 @@ class Any(Named, PrettyTuple):
     """
 
     def derivative(self, c):
-        return Null(frozenset([c]))
+        return Null(fs([c]))
 
     def nullable(self, f):
         return False
@@ -201,7 +204,7 @@ class Any(Named, PrettyTuple):
         return self
 
     def trees(self, f):
-        return frozenset()
+        return fs()
 
 
 Any = Any("Any")
@@ -234,7 +237,7 @@ class Exactly(namedtuple("Exactly", "c"), PrettyTuple):
 
     def derivative(self, c):
         if self.c == c:
-            return Null(frozenset([c]))
+            return Null(fs([c]))
         else:
             return Empty
 
@@ -245,7 +248,7 @@ class Exactly(namedtuple("Exactly", "c"), PrettyTuple):
         return self
 
     def trees(self, f):
-        return frozenset()
+        return fs()
 
 
 class Red(namedtuple("Red", "l, f"), PrettyTuple):
@@ -263,11 +266,11 @@ class Red(namedtuple("Red", "l, f"), PrettyTuple):
 
     def compact(self):
         if isinstance(self.l, Null):
-            return Null(frozenset(self.f(t) for t in self.l.ts))
+            return Null(fs(self.f(t) for t in self.l.ts))
         return Red(compact(self.l), self.f)
 
     def trees(self, f):
-        return frozenset(self.f(x) for x in f(self.l))
+        return fs(self.f(x) for x in f(self.l))
 
 
 class Cat(namedtuple("Cat", "first, second"), PrettyTuple):
@@ -296,12 +299,12 @@ class Cat(namedtuple("Cat", "first, second"), PrettyTuple):
         if isinstance(self.first, Null):
             ts = self.first.ts
             def f(x):
-                return frozenset((t, x) for t in ts)
+                return fs((t, x) for t in ts)
             return Red(compact(self.second), f)
         if isinstance(self.second, Null):
             ts = self.second.ts
             def g(x):
-                return frozenset((x, t) for t in ts)
+                return fs((x, t) for t in ts)
             return Red(compact(self.first), g)
         return Cat(compact(self.first), compact(self.second))
 
@@ -319,7 +322,7 @@ class Alt(namedtuple("Alt", "ls"), PrettyTuple):
     """
 
     def derivative(self, c):
-        return Alt(tuple(lazy(derivative, l, c) for l in self.ls))
+        return Alt(fs(lazy(derivative, l, c) for l in self.ls))
 
     def nullable(self, f):
         return any(f(l) for l in self.ls)
@@ -331,14 +334,14 @@ class Alt(namedtuple("Alt", "ls"), PrettyTuple):
         elif len(ls) == 1:
             return ls[0]
         else:
-            new = []
+            new = set()
             for l in ls:
                 if isinstance(l, Alt):
                     for alt in l.ls:
-                        new.append(alt)
+                        new.add(alt)
                 else:
-                    new.append(l)
-            return Alt(tuple(new))
+                    new.add(l)
+            return Alt(fs(new))
 
     def trees(self, f):
         return reduce(or_, map(f, self.ls))
@@ -363,11 +366,11 @@ class Rep(namedtuple("Rep", "l"), PrettyTuple):
 
     def compact(self):
         if self.l is Empty:
-            return Null(frozenset())
+            return Null(fs())
         return Rep(compact(self.l))
 
     def trees(self, f):
-        return frozenset()
+        return fs()
 
 
 def const(x):
@@ -394,7 +397,7 @@ def nullable(f):
     return inner
 
 
-@kleene(frozenset())
+@kleene(fs())
 def trees(f):
     def inner(l):
         return force(l).trees(f)

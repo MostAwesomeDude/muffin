@@ -1,12 +1,15 @@
 from muffin.pan import Alt, Cat, Exactly, Null, Red
 
 
+fs = frozenset
+
+
 def Optional(l):
     """
     Match either the given language, or the null string.
     """
 
-    return Alt([l, Null(frozenset())])
+    return Alt(fs([l, Null(fs())]))
 
 
 def String(s):
@@ -15,7 +18,7 @@ def String(s):
     """
 
     if not s:
-        return Null(frozenset())
+        return Null(fs())
     parser = Exactly(s[0])
     for c in s[1:]:
         parser = Cat(parser, Exactly(c))
