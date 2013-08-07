@@ -35,3 +35,8 @@ class TestCompact(TestCase):
         l = Alt((Null(frozenset(["a"])), Null(frozenset(["b"])), Empty))
         expected = Alt((Null(frozenset(["a"])), Null(frozenset(["b"]))))
         self.assertEqual(compact(l), expected)
+
+    def test_alt_nested(self):
+        l = Alt((Null(frozenset(["a"])), Alt((Null(frozenset(["b"])), Empty))))
+        expected = Alt((Null(frozenset(["a"])), Null(frozenset(["b"]))))
+        self.assertEqual(compact(l), expected)

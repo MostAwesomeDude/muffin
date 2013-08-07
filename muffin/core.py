@@ -310,7 +310,14 @@ class Alt(namedtuple("Alt", "ls"), PrettyTuple):
         elif len(ls) == 1:
             return ls[0]
         else:
-            return Alt(tuple(ls))
+            new = []
+            for l in ls:
+                if isinstance(l, Alt):
+                    for alt in l.ls:
+                        new.append(alt)
+                else:
+                    new.append(l)
+            return Alt(tuple(new))
 
     def trees(self, f):
         return reduce(or_, map(f, self.ls))
