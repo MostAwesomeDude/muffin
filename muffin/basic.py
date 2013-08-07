@@ -6,7 +6,7 @@ def Optional(l):
     Match either the given language, or the null string.
     """
 
-    return Alt(l, Null(frozenset()))
+    return Alt([l, Null(frozenset())])
 
 
 def String(s):

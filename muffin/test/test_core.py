@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from muffin.core import derivative, Empty, Exactly, Null
+from muffin.core import compact, derivative, Alt, Empty, Exactly, Null
 
 
 class TestDerivative(TestCase):
@@ -16,3 +16,22 @@ class TestDerivative(TestCase):
         c = "d"
         expected = Empty
         self.assertEqual(derivative(l, c), expected)
+
+    def test_alt_many_matching(self):
+        l = Alt((Exactly("a"), Exactly("b"), Exactly("c")))
+        c = "a"
+        expected = Alt((Null(frozenset(["a"])), Empty, Empty))
+        self.assertEqual(derivative(l, c), expected)
+
+
+class TestCompact(TestCase):
+
+    def test_alt_many_empty(self):
+        l = Alt((Null(frozenset(["a"])), Empty, Empty))
+        expected = Null(frozenset(["a"]))
+        self.assertEqual(compact(l), expected)
+
+    def test_alt_some_empty(self):
+        l = Alt((Null(frozenset(["a"])), Null(frozenset(["b"])), Empty))
+        expected = Alt((Null(frozenset(["a"])), Null(frozenset(["b"]))))
+        self.assertEqual(compact(l), expected)

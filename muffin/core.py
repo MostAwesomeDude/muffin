@@ -1,5 +1,6 @@
 from collections import namedtuple
 from functools import wraps
+from operator import or_
 
 from pretty import pprint
 
@@ -261,7 +262,7 @@ class Cat(namedtuple("Cat", "first, second"), PrettyTuple):
         l = Cat(lazy(derivative, self.first, c), self.second)
 
         if nullable(self.first):
-            return Alt(l, lazy(derivative, self.second, c))
+            return Alt((l, lazy(derivative, self.second, c)))
         else:
             return l
 
@@ -287,7 +288,7 @@ class Cat(namedtuple("Cat", "first, second"), PrettyTuple):
         return set((x, y) for x in f(self.first) for y in f(self.second))
 
 
-class Alt(namedtuple("Alt", "first, second"), PrettyTuple):
+class Alt(namedtuple("Alt", "ls"), PrettyTuple):
     """
     Alternation or union of parsers.
 
@@ -297,20 +298,22 @@ class Alt(namedtuple("Alt", "first, second"), PrettyTuple):
     """
 
     def derivative(self, c):
-        return Alt(lazy(derivative, self.first, c), lazy(derivative, self.second, c))
+        return Alt(tuple(lazy(derivative, l, c) for l in self.ls))
 
     def nullable(self, f):
-        return any(f(l) for l in self)
+        return any(f(l) for l in self.ls)
 
     def compact(self):
-        if self.first == Empty:
-            return compact(self.second)
-        elif self.second == Empty:
-            return compact(self.first)
-        return Alt(compact(self.first), compact(self.second))
+        ls = [compact(l) for l in self.ls if l is not Empty]
+        if len(ls) == 0:
+            return Empty
+        elif len(ls) == 1:
+            return ls[0]
+        else:
+            return Alt(tuple(ls))
 
     def trees(self, f):
-        return f(self.first) | f(self.second)
+        return reduce(or_, map(f, self.ls))
 
 class Rep(namedtuple("Rep", "l"), PrettyTuple):
     """
@@ -397,5 +400,8 @@ def tie(obj):
         for item in node:
             if isinstance(item, Lazy):
                 patch(item, obj)
+            elif isinstance(item, list):
+                for thing in item:
+                    s.append(thing)
             elif item is not obj:
                 s.append(item)
