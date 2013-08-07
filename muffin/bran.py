@@ -1,4 +1,4 @@
-from muffin.core import Alt, Cat, Exactly, Rep
+from muffin.pan import Alt, Cat, Exactly, Rep
 
 
 char = Alt((Exactly("a"), Exactly("b")))

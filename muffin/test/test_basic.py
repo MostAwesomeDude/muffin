@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from muffin.basic import Optional, String
-from muffin.core import parses, Cat, Exactly
+from muffin.pan import parses, Cat, Exactly
 
 
 class TestOptional(TestCase):

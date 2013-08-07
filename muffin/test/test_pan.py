@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from muffin.core import compact, derivative, Alt, Any, Empty, Exactly, Null
+from muffin.pan import compact, derivative, Alt, Any, Empty, Exactly, Null
 
 
 class TestDerivative(TestCase):

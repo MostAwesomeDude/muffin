@@ -1,4 +1,4 @@
-from muffin.core import Alt, Cat, Exactly, Null, Red
+from muffin.pan import Alt, Cat, Exactly, Null, Red
 
 
 def Optional(l):
