@@ -2,7 +2,7 @@ from collections import namedtuple
 from functools import wraps
 from operator import or_
 
-from pretty import pprint
+from pretty import pretty
 
 
 fs = frozenset
@@ -75,8 +75,7 @@ class Named(object):
     def __init__(self, name):
         self.name = name
 
-    def __repr__(self):
-        return self.name
+    __repr__ = pretty
 
     def __pretty__(self, p, cycle):
         p.text(self.name)
@@ -88,11 +87,7 @@ class Lazy(object):
     def __init__(self, f, *args):
         self._thunk = f, args
 
-    def __repr__(self):
-        if self.value is None:
-            return "%r(%r)" % self._thunk
-        else:
-            return repr(self.value)
+    __repr__ = pretty
 
     def __hash__(self):
         # Hash the only thing that is constant and hashable on this class.
@@ -149,6 +144,8 @@ def lazy(f, *args):
 
 class PrettyTuple(object):
 
+    __repr__ = pretty
+
     def __pretty__(self, p, cycle):
         name = type(self).__name__,
         if cycle:
@@ -185,6 +182,8 @@ class Empty(Named, PrettyTuple):
     def trees(self, f):
         return fs()
 
+    __repr__ = pretty
+
 
 Empty = Empty("Empty")
 
@@ -210,7 +209,7 @@ class Any(Named, PrettyTuple):
 Any = Any("Any")
 
 
-class Null(namedtuple("Null", "ts"), PrettyTuple):
+class Null(PrettyTuple, namedtuple("Null", "ts")):
     """
     The null set, representing a match with the null string.
 
@@ -230,7 +229,7 @@ class Null(namedtuple("Null", "ts"), PrettyTuple):
         return self.ts
 
 
-class Exactly(namedtuple("Exactly", "c"), PrettyTuple):
+class Exactly(PrettyTuple, namedtuple("Exactly", "c")):
     """
     Exactly a single terminal.
     """
@@ -251,7 +250,7 @@ class Exactly(namedtuple("Exactly", "c"), PrettyTuple):
         return fs()
 
 
-class Red(namedtuple("Red", "l, f"), PrettyTuple):
+class Red(PrettyTuple, namedtuple("Red", "l, f")):
     """
     A reduction on languages.
 
@@ -273,7 +272,7 @@ class Red(namedtuple("Red", "l, f"), PrettyTuple):
         return fs(self.f(x) for x in f(self.l))
 
 
-class Cat(namedtuple("Cat", "first, second"), PrettyTuple):
+class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
     """
     Concatenation of parsers.
 
@@ -312,7 +311,7 @@ class Cat(namedtuple("Cat", "first, second"), PrettyTuple):
         return set((x, y) for x in f(self.first) for y in f(self.second))
 
 
-class Alt(namedtuple("Alt", "ls"), PrettyTuple):
+class Alt(PrettyTuple, namedtuple("Alt", "ls")):
     """
     Alternation or union of parsers.
 
@@ -346,7 +345,7 @@ class Alt(namedtuple("Alt", "ls"), PrettyTuple):
     def trees(self, f):
         return reduce(or_, map(f, self.ls))
 
-class Rep(namedtuple("Rep", "l"), PrettyTuple):
+class Rep(PrettyTuple, namedtuple("Rep", "l")):
     """
     Kleene star of a parser.
 
