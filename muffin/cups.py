@@ -1,4 +1,4 @@
-from muffin.pan import Alt, Cat, Exactly, Null, Red
+from muffin.pan import Alt, Cat, Exactly, Null, Red, Rep
 
 
 fs = frozenset
@@ -10,6 +10,34 @@ def Optional(l):
     """
 
     return Alt(fs([l, Null(fs())]))
+
+
+def Bracket(bra, ket):
+    """
+    Generate an object that can be passed a language to bracket that language.
+
+    Parse bra, then the bracketed language, then ket.
+    """
+
+    def Bracketed(l):
+        """
+        Bracket a language.
+        """
+
+        return Cat(bra, Cat(l, ket))
+
+    return Bracketed
+
+
+def Sep(l, s):
+    """
+    Parse a language at least once, with subsequent iterations separated by a
+    separator in-between.
+
+    To get a zero-or-more version, use Optional() around this combinator.
+    """
+
+    return Cat(l, Rep(Cat(s, l)))
 
 
 def String(s):
