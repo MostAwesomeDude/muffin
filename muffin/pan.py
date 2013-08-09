@@ -4,6 +4,8 @@ from operator import or_
 
 from pretty import pretty
 
+from muffin.utensils import compose
+
 
 fs = frozenset
 
@@ -285,6 +287,8 @@ class Red(PrettyTuple, namedtuple("Red", "l, f")):
     def compact(self):
         if isinstance(self.l, Term):
             return Term(fs(self.f(t) for t in self.l.ts))
+        elif isinstance(self.l, Red):
+            return Red(compact(self.l.l), compose(self.l.f, self.f))
         return Red(compact(self.l), self.f)
 
     def trees(self, f):
