@@ -194,7 +194,7 @@ class Any(Named, PrettyTuple):
     """
 
     def derivative(self, c):
-        return Null(fs([c]))
+        return Term(fs([c]))
 
     def nullable(self, f):
         return False
@@ -209,7 +209,7 @@ class Any(Named, PrettyTuple):
 Any = Any("Any")
 
 
-class Null(PrettyTuple, namedtuple("Null", "ts")):
+class Term(PrettyTuple, namedtuple("Term", "ts")):
     """
     The null set, representing a match with the null string.
 
@@ -236,7 +236,7 @@ class Exactly(PrettyTuple, namedtuple("Exactly", "c")):
 
     def derivative(self, c):
         if self.c == c:
-            return Null(fs([c]))
+            return Term(fs([c]))
         else:
             return Empty
 
@@ -264,8 +264,8 @@ class Red(PrettyTuple, namedtuple("Red", "l, f")):
         return f(self.l)
 
     def compact(self):
-        if isinstance(self.l, Null):
-            return Null(fs(self.f(t) for t in self.l.ts))
+        if isinstance(self.l, Term):
+            return Term(fs(self.f(t) for t in self.l.ts))
         return Red(compact(self.l), self.f)
 
     def trees(self, f):
@@ -295,12 +295,12 @@ class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
     def compact(self):
         if Empty in self:
             return Empty
-        if isinstance(self.first, Null):
+        if isinstance(self.first, Term):
             ts = self.first.ts
             def f(x):
                 return fs((t, x) for t in ts)
             return Red(compact(self.second), f)
-        if isinstance(self.second, Null):
+        if isinstance(self.second, Term):
             ts = self.second.ts
             def g(x):
                 return fs((x, t) for t in ts)
@@ -365,7 +365,7 @@ class Rep(PrettyTuple, namedtuple("Rep", "l")):
 
     def compact(self):
         if self.l is Empty:
-            return Null(fs())
+            return Term(fs())
         return Rep(compact(self.l))
 
     def trees(self, f):

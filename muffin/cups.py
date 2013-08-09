@@ -1,4 +1,4 @@
-from muffin.pan import Alt, Cat, Exactly, Null, Red, Rep
+from muffin.pan import Alt, Cat, Exactly, Red, Rep, Term
 
 
 fs = frozenset
@@ -9,7 +9,7 @@ def Optional(l):
     Match either the given language, or the null string.
     """
 
-    return Alt(fs([l, Null(fs())]))
+    return Alt(fs([l, Term(fs())]))
 
 
 def Bracket(bra, ket):
@@ -46,7 +46,7 @@ def String(s):
     """
 
     if not s:
-        return Null(fs())
+        return Term(fs())
     parser = Exactly(s[0])
     for c in s[1:]:
         parser = Cat(parser, Exactly(c))
