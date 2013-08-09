@@ -182,10 +182,29 @@ class Empty(Named, PrettyTuple):
     def trees(self, f):
         return fs()
 
-    __repr__ = pretty
-
 
 Empty = Empty("Empty")
+
+
+class Null(Named, PrettyTuple):
+    """
+    The null string.
+    """
+
+    def derivative(self, c):
+        return Empty
+
+    def nullable(self, f):
+        return True
+
+    def compact(self):
+        return self
+
+    def trees(self, f):
+        return fs()
+
+
+Null = Null("Null")
 
 
 class Any(Named, PrettyTuple):
@@ -211,7 +230,7 @@ Any = Any("Any")
 
 class Term(PrettyTuple, namedtuple("Term", "ts")):
     """
-    The null set, representing a match with the null string.
+    A nullable node which has matched a terminal.
 
     Yields terminals when parsing.
     """
@@ -285,7 +304,9 @@ class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
         l = Cat(lazy(derivative, self.first, c), self.second)
 
         if nullable(self.first):
-            return Alt((l, lazy(derivative, self.second, c)))
+            terms = Term(trees(self.first))
+            partial = Cat(terms, lazy(derivative, self.second, c))
+            return Alt((l, partial))
         else:
             return l
 
@@ -308,7 +329,7 @@ class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
         return Cat(compact(self.first), compact(self.second))
 
     def trees(self, f):
-        return set((x, y) for x in f(self.first) for y in f(self.second))
+        return fs((x, y) for x in f(self.first) for y in f(self.second))
 
 
 class Alt(PrettyTuple, namedtuple("Alt", "ls")):
@@ -406,6 +427,7 @@ def trees(f):
 def parses(l, s):
     for c in s:
         l = compact(derivative(l, c))
+        print l
     return trees(l)
 
 
@@ -430,7 +452,7 @@ def tie(obj):
         for item in node:
             if isinstance(item, Lazy):
                 patch(item, obj)
-            elif isinstance(item, list):
+            elif isinstance(item, fs):
                 for thing in item:
                     s.append(thing)
             elif item is not obj:
