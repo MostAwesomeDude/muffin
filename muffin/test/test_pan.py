@@ -27,25 +27,20 @@ class TestDerivative(TestCase):
         self.assertEqual(derivative(l, c), expected)
 
     def test_alt_many_matching(self):
-        l = Alt(fs([Exactly("a"), Exactly("b"), Exactly("c")]))
+        l = Alt(Exactly("a"), Exactly("b"))
         c = "a"
-        expected = Alt(fs([Term(fs(["a"])), Empty, Empty]))
+        expected = Alt(Term(fs(["a"])), Empty)
         self.assertEqual(derivative(l, c), expected)
 
 
 class TestCompact(TestCase):
 
     def test_alt_many_empty(self):
-        l = Alt(fs([Term(fs(["a"])), Empty, Empty]))
+        l = Alt(Term(fs(["a"])), Alt(Empty, Empty))
         expected = Term(fs(["a"]))
         self.assertEqual(compact(l), expected)
 
     def test_alt_some_empty(self):
-        l = Alt(fs([Term(fs(["a"])), Term(fs(["b"])), Empty]))
-        expected = Alt(fs([Term(fs(["a"])), Term(fs(["b"]))]))
-        self.assertEqual(compact(l), expected)
-
-    def test_alt_nested(self):
-        l = Alt(fs([Term(fs(["a"])), Alt(fs([Term(fs(["b"])), Empty]))]))
-        expected = Alt(fs([Term(fs(["a"])), Term(fs(["b"]))]))
+        l = Alt(Term(fs(["a"])), Alt(Term(fs(["b"])), Empty))
+        expected = Alt(Term(fs(["a"])), Term(fs(["b"])))
         self.assertEqual(compact(l), expected)

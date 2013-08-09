@@ -1,6 +1,5 @@
 from collections import namedtuple
 from functools import wraps
-from operator import or_
 
 from pretty import pretty
 
@@ -310,7 +309,7 @@ class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
         if nullable(self.first):
             terms = Term(trees(self.first))
             partial = Cat(terms, lazy(derivative, self.second, c))
-            return Alt((l, partial))
+            return Alt(l, partial)
         else:
             return l
 
@@ -336,7 +335,7 @@ class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
         return fs((x, y) for x in f(self.first) for y in f(self.second))
 
 
-class Alt(PrettyTuple, namedtuple("Alt", "ls")):
+class Alt(PrettyTuple, namedtuple("Alt", "first, second")):
     """
     Alternation or union of parsers.
 
@@ -346,29 +345,25 @@ class Alt(PrettyTuple, namedtuple("Alt", "ls")):
     """
 
     def derivative(self, c):
-        return Alt(fs(lazy(derivative, l, c) for l in self.ls))
+        return Alt(lazy(derivative, self.first, c),
+                   lazy(derivative, self.second, c))
 
     def nullable(self, f):
-        return any(f(l) for l in self.ls)
+        return self.first.nullable(f) or self.second.nullable(f)
 
     def compact(self):
-        ls = [compact(l) for l in self.ls if l is not Empty]
-        if len(ls) == 0:
-            return Empty
-        elif len(ls) == 1:
-            return ls[0]
+        first = compact(self.first)
+        second = compact(self.second)
+        if first is Empty:
+            return second
+        elif second is Empty:
+            return first
         else:
-            new = set()
-            for l in ls:
-                if isinstance(l, Alt):
-                    for alt in l.ls:
-                        new.add(alt)
-                else:
-                    new.add(l)
-            return Alt(fs(new))
+            return Alt(first, second)
 
     def trees(self, f):
-        return reduce(or_, map(f, self.ls))
+        return f(self.first) | f(self.second)
+
 
 class Rep(PrettyTuple, namedtuple("Rep", "l")):
     """
@@ -456,8 +451,5 @@ def tie(obj):
         for item in node:
             if isinstance(item, Lazy):
                 patch(item, obj)
-            elif isinstance(item, fs):
-                for thing in item:
-                    s.append(thing)
             elif item is not obj:
                 s.append(item)
