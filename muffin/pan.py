@@ -3,7 +3,7 @@ from functools import wraps
 
 from pretty import pretty
 
-from muffin.utensils import compose
+from muffin.utensils import compose, curry_first, curry_second
 
 
 fs = frozenset
@@ -291,7 +291,8 @@ class Red(PrettyTuple, namedtuple("Red", "l, f")):
         return Red(compact(self.l), self.f)
 
     def trees(self, f):
-        return fs(self.f(x) for x in f(self.l))
+        ts = f(self.l)
+        return fs(map(self.f, ts))
 
 
 class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
@@ -319,17 +320,23 @@ class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
     def compact(self):
         if Empty in self:
             return Empty
+
+        first = compact(self.first)
+        second = compact(self.second)
+
         if isinstance(self.first, Term):
             ts = self.first.ts
-            def f(x):
-                return fs((t, x) for t in ts)
-            return Red(compact(self.second), f)
+            if not ts:
+                return Red(second, curry_first(None))
+            elif len(ts) == 1:
+                return Red(second, curry_first(list(ts)[0]))
         if isinstance(self.second, Term):
             ts = self.second.ts
-            def g(x):
-                return fs((x, t) for t in ts)
-            return Red(compact(self.first), g)
-        return Cat(compact(self.first), compact(self.second))
+            if not ts:
+                return Red(first, curry_second(None))
+            elif len(ts) == 1:
+                return Red(first, curry_second(list(ts)[0]))
+        return Cat(first, second)
 
     def trees(self, f):
         return fs((x, y) for x in f(self.first) for y in f(self.second))
