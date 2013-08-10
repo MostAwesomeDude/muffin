@@ -1,3 +1,7 @@
+def const(x):
+    return x
+
+
 def compose(f, g):
     def h(x):
         return g(f(x))

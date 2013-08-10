@@ -3,7 +3,7 @@ from functools import wraps
 
 from pretty import pretty
 
-from muffin.utensils import compose, curry_first, curry_second
+from muffin.utensils import compose, const, curry_first, curry_second
 
 
 fs = frozenset
@@ -385,7 +385,7 @@ class Rep(PrettyTuple, namedtuple("Rep", "l")):
     def derivative(self, c):
         # Cat needs to be lazy here too, since the inner language might not
         # yet be forced. Remember that Rep is lazy too!
-        return Red(Cat(lazy(derivative, self.l, c), self), tuple)
+        return Red(Cat(lazy(derivative, self.l, c), self), const)
 
     def nullable(self, f):
         return True
@@ -397,10 +397,6 @@ class Rep(PrettyTuple, namedtuple("Rep", "l")):
 
     def trees(self, f):
         return fs()
-
-
-def const(x):
-    return x
 
 
 @memo
