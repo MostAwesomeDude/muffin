@@ -1,4 +1,4 @@
-from muffin.pan import Alt, Cat, Exactly, Red, Rep, Null
+from muffin.pan import Alt, Cat, Ex, Red, Rep, Null
 
 
 fs = frozenset
@@ -47,7 +47,7 @@ def String(s):
 
     if not s:
         return Null
-    parser = Exactly(s[0])
+    parser = Ex(s[0])
     for c in s[1:]:
-        parser = Cat(parser, Exactly(c))
+        parser = Cat(parser, Ex(c))
     return Red(parser, lambda _: s)

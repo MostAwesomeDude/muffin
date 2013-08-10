@@ -249,7 +249,7 @@ class Term(PrettyTuple, namedtuple("Term", "ts")):
         return self.ts
 
 
-class Exactly(PrettyTuple, namedtuple("Exactly", "c")):
+class Ex(PrettyTuple, namedtuple("Ex", "c")):
     """
     Exactly a single terminal.
     """

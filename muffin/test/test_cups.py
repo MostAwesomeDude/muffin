@@ -1,31 +1,31 @@
 from unittest import TestCase
 
 from muffin.cups import Optional, String
-from muffin.pan import parses, Cat, Exactly
+from muffin.pan import parses, Cat, Ex
 
 
 class TestOptional(TestCase):
 
     def test_yes_leading(self):
-        l = Cat(Optional(Exactly("a")), Exactly("b"))
+        l = Cat(Optional(Ex("a")), Ex("b"))
         i = "ab"
         e = set(["ab"])
         self.assertEqual(parses(l, i), e)
 
     def test_no_leading(self):
-        l = Cat(Optional(Exactly("a")), Exactly("b"))
+        l = Cat(Optional(Ex("a")), Ex("b"))
         i = "b"
         e = set(["b"])
         self.assertEqual(parses(l, i), e)
 
     def test_yes_trailing(self):
-        l = Cat(Exactly("a"), Optional(Exactly("b")))
+        l = Cat(Ex("a"), Optional(Ex("b")))
         i = "ab"
         e = set(["ab"])
         self.assertEqual(parses(l, i), e)
 
     def test_no_trailing(self):
-        l = Cat(Exactly("a"), Optional(Exactly("b")))
+        l = Cat(Ex("a"), Optional(Ex("b")))
         i = "a"
         e = set(["a"])
         self.assertEqual(parses(l, i), e)

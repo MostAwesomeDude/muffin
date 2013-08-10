@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from muffin.pan import compact, derivative, Alt, Any, Empty, Exactly, Term
+from muffin.pan import compact, derivative, Alt, Any, Empty, Ex, Term
 
 
 fs = frozenset
@@ -15,19 +15,19 @@ class TestDerivative(TestCase):
         self.assertEqual(derivative(l, c), expected)
 
     def test_exactly_matching(self):
-        l = Exactly("c")
+        l = Ex("c")
         c = "c"
         expected = Term(fs(["c"]))
         self.assertEqual(derivative(l, c), expected)
 
     def test_exactly_mismatch(self):
-        l = Exactly("c")
+        l = Ex("c")
         c = "d"
         expected = Empty
         self.assertEqual(derivative(l, c), expected)
 
     def test_alt_many_matching(self):
-        l = Alt(Exactly("a"), Exactly("b"))
+        l = Alt(Ex("a"), Ex("b"))
         c = "a"
         expected = Alt(Term(fs(["a"])), Empty)
         self.assertEqual(derivative(l, c), expected)

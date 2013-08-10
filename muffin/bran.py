@@ -1,8 +1,8 @@
-from muffin.pan import Alt, Cat, Exactly, Rep
+from muffin.pan import Alt, Cat, Ex, Rep
 
 
-char = Alt((Exactly("a"), Exactly("b")))
+char = Alt((Ex("a"), Ex("b")))
 
-charset = Cat(Exactly("["), Cat(Rep(char), Exactly("]")))
+charset = Cat(Ex("["), Cat(Rep(char), Ex("]")))
 
 expr = Rep(Alt((char, charset)))
