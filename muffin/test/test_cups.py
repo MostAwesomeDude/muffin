@@ -9,25 +9,25 @@ class TestOptional(TestCase):
     def test_yes_leading(self):
         l = Cat(Optional(Ex("a")), Ex("b"))
         i = "ab"
-        e = set(["ab"])
+        e = set([("a", "b")])
         self.assertEqual(parses(l, i), e)
 
     def test_no_leading(self):
         l = Cat(Optional(Ex("a")), Ex("b"))
         i = "b"
-        e = set(["b"])
+        e = set([(None, "b")])
         self.assertEqual(parses(l, i), e)
 
     def test_yes_trailing(self):
         l = Cat(Ex("a"), Optional(Ex("b")))
         i = "ab"
-        e = set(["ab"])
+        e = set([("a", "b")])
         self.assertEqual(parses(l, i), e)
 
     def test_no_trailing(self):
         l = Cat(Ex("a"), Optional(Ex("b")))
         i = "a"
-        e = set(["a"])
+        e = set([("a", None)])
         self.assertEqual(parses(l, i), e)
 
 

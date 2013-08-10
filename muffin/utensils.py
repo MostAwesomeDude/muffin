@@ -10,11 +10,11 @@ def compose(f, g):
 
 def curry_first(x):
     def first(y):
-        return y, x
+        return x, y
     return first
 
 
 def curry_second(x):
     def second(y):
-        return x, y
+        return y, x
     return second
