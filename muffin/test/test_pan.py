@@ -1,6 +1,7 @@
 from unittest import TestCase
 
-from muffin.pan import compact, derivative, Alt, Any, Empty, Ex, Term
+from muffin.pan import (compact, derivative, parses, Alt, Any, Empty, Ex, Rep,
+                        Term)
 
 
 fs = frozenset
@@ -44,3 +45,12 @@ class TestCompact(TestCase):
         l = Alt(Term(fs(["a"])), Alt(Term(fs(["b"])), Empty))
         expected = Alt(Term(fs(["a"])), Term(fs(["b"])))
         self.assertEqual(compact(l), expected)
+
+
+class TestParse(TestCase):
+
+    def test_repeat(self):
+        l = Rep(Ex("a"))
+        i = "aaa"
+        e = fs([("a", "a", "a")])
+        self.assertEqual(parses(l, i), e)

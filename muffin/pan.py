@@ -383,9 +383,15 @@ class Rep(PrettyTuple, namedtuple("Rep", "l")):
     """
 
     def derivative(self, c):
+        def repeat(xy):
+            x, y = xy
+            if y is None:
+                return (x,)
+            return (x,) + y
+
         # Cat needs to be lazy here too, since the inner language might not
         # yet be forced. Remember that Rep is lazy too!
-        return Red(Cat(lazy(derivative, self.l, c), self), const)
+        return Red(Cat(lazy(derivative, self.l, c), self), repeat)
 
     def nullable(self, f):
         return True
@@ -396,7 +402,7 @@ class Rep(PrettyTuple, namedtuple("Rep", "l")):
         return Rep(compact(self.l))
 
     def trees(self, f):
-        return fs()
+        return fs([None])
 
 
 @memo
