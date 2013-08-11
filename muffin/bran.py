@@ -1,8 +1,12 @@
-from muffin.pan import Alt, Cat, Ex, Rep
+from muffin.cups import Any, AnyOf, Bracket
+from muffin.pan import Cat, Ex, Rep
 
 
-char = Alt((Ex("a"), Ex("b")))
+# char = AnyOf("abcdefhijklmnopqrstuvwxyz")
+char = AnyOf("abc")
 
-charset = Cat(Ex("["), Cat(Rep(char), Ex("]")))
+charset = Bracket(Ex("["), Ex("]"))(char)
 
-expr = Rep(Alt((char, charset)))
+inverted = Bracket(Cat(Ex("["), Ex("^")), Ex("]"))(char)
+
+expr = Rep(Any([char, charset, inverted]))
