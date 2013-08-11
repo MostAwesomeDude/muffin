@@ -1,4 +1,4 @@
-from muffin.pan import Alt, Cat, Ex, Red, Rep, Null
+from muffin.pan import Alt, Cat, Empty, Ex, Red, Rep, Null
 
 
 fs = frozenset
@@ -51,3 +51,16 @@ def String(s):
     for c in s[1:]:
         parser = Cat(parser, Ex(c))
     return Red(parser, lambda _: s)
+
+
+def AnyOf(s):
+    """
+    Match any member of the given sequence.
+    """
+
+    if not s:
+        return Empty
+    parser = Ex(s[0])
+    for c in s[1:]:
+        parser = Alt(parser, Ex(c))
+    return parser
