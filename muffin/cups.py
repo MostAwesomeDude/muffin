@@ -24,7 +24,11 @@ def Bracket(bra, ket):
         Bracket a language.
         """
 
-        return Cat(bra, Cat(l, ket))
+        def unbracket(xyz):
+            x, (y, z) = xyz
+            return y
+
+        return Red(Cat(bra, Cat(l, ket)), unbracket)
 
     return Bracketed
 
@@ -40,17 +44,30 @@ def Sep(l, s):
     return Cat(l, Rep(Cat(s, l)))
 
 
-def String(s):
+def Any(ls):
     """
-    Match every member of the string in turn, returning the entire string.
+    Match any of the given languages.
     """
 
-    if not s:
-        return Null
-    parser = Ex(s[0])
-    for c in s[1:]:
-        parser = Cat(parser, Ex(c))
-    return Red(parser, lambda _: s)
+    if not ls:
+        return Empty
+    parser = ls[0]
+    for l in ls[1:]:
+        parser = Alt(parser, l)
+    return parser
+
+
+def All(ls):
+    """
+    Match all of the given languages, in order.
+    """
+
+    if not ls:
+        return Empty
+    parser = ls[0]
+    for l in ls[1:]:
+        parser = Cat(parser, l)
+    return parser
 
 
 def AnyOf(s):
@@ -58,9 +75,12 @@ def AnyOf(s):
     Match any member of the given sequence.
     """
 
-    if not s:
-        return Empty
-    parser = Ex(s[0])
-    for c in s[1:]:
-        parser = Alt(parser, Ex(c))
-    return parser
+    return Any(map(Ex, s))
+
+
+def String(s):
+    """
+    Match every member of the string in turn, returning the entire string.
+    """
+
+    return Red(All(map(Ex, s)), lambda _: s)
