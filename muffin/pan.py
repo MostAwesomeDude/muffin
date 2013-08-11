@@ -202,7 +202,7 @@ class Null(Named, PrettyTuple):
         return self
 
     def trees(self, f):
-        return fs()
+        return fs([None])
 
 
 Null = Null("Null")
@@ -426,10 +426,19 @@ def trees(f):
     return inner
 
 
+def cd(l, c):
+    d = derivative(l, c)
+    print "WRT", c, ":", d
+    l = compact(d)
+    print "Compacted:", l
+    return l
+
+
 def parses(l, s):
+    print
+    print "Initial:", l
     for c in s:
-        l = compact(derivative(l, c))
-        print l
+        l = cd(l, c)
     return trees(l)
 
 
