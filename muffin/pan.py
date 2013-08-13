@@ -356,7 +356,7 @@ class Alt(PrettyTuple, namedtuple("Alt", "first, second")):
                    lazy(derivative, self.second, c))
 
     def nullable(self, f):
-        return self.first.nullable(f) or self.second.nullable(f)
+        return f(self.first) or f(self.second)
 
     def compact(self):
         first = compact(self.first)
@@ -434,15 +434,11 @@ def trees(f):
 
 def cd(l, c):
     d = derivative(l, c)
-    print "WRT", c, ":", d
     l = compact(d)
-    print "Compacted:", l
     return l
 
 
 def parses(l, s):
-    print
-    print "Initial:", l
     for c in s:
         l = cd(l, c)
     return trees(l)
@@ -450,7 +446,7 @@ def parses(l, s):
 
 def matches(l, s):
     for c in s:
-        l = compact(derivative(l, c))
+        l = cd(l, c)
     return nullable(l)
 
 
