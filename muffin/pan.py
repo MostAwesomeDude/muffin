@@ -432,9 +432,24 @@ def trees(f):
     return inner
 
 
+@kleene(0)
+def length(f):
+    def inner(l):
+        try:
+            return sum(f(x) for x in l) + 1
+        except TypeError:
+            return 1
+    return inner
+
+
 def cd(l, c):
+    print "~ Derivative for", repr(c)
     d = derivative(l, c)
+    print d
+    print "~ Size before compact:", length(d)
     l = compact(d)
+    print l
+    print "~ Size after compact:", length(l)
     return l
 
 
