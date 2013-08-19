@@ -3,7 +3,7 @@ from functools import wraps
 
 from pretty import pretty
 
-from muffin.utensils import compose, const, curry_first, curry_second
+from muffin.utensils import compose, curry_first, curry_second
 
 
 fs = frozenset
