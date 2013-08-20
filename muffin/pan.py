@@ -3,7 +3,7 @@ from functools import wraps
 
 from pretty import pretty
 
-from muffin.utensils import compose, curry_first, curry_second
+from muffin.utensils import compose, curry_first, curry_second, kleene
 
 
 fs = frozenset
@@ -17,37 +17,6 @@ class Recursion(Exception):
 
 def key(args, kwargs):
     return args, fs(kwargs.iteritems())
-
-
-def kleene(bottom):
-    """
-    Kleene's fixed point.
-
-    Ascend from a bottom value to a recursively-defined value. Usage is
-    similar to a general fixed-point combinator, like U, Y, or Z, but with
-    memoization and an explicit bottom value. This decorator can thus be used
-    to deal with ill-founded recursion, as long as the values involved are
-    sufficiently pure; if this decorator sees a value twice under the same
-    circumstances, it will "bottom out" and ensure that the computation
-    terminates eventually.
-    """
-
-    def first(f):
-        cache = {}
-
-        def second(x):
-            def z(*args, **kwargs):
-                k = key(args, kwargs)
-                if k in cache:
-                    v = cache[k]
-                else:
-                    cache[k] = bottom
-                    v = x(x)(*args, **kwargs)
-                    cache[k] = v
-                return v
-            return f(z)
-        return second(second)
-    return first
 
 
 def memo(f):
