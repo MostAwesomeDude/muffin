@@ -1,6 +1,9 @@
+from functools import wraps
+
 from pretty import pretty
 
 from muffin.pan import Empty, Null
+
 
 class NT(object):
     """
@@ -31,7 +34,63 @@ class NT(object):
         return n
 
 
-def derive(x, c):
+def alphabet(g):
+    a = set()
+    for chains in g.itervalues():
+        for chain in chains:
+            for item in chain:
+                if not isinstance(item, NT):
+                    a.add(item)
+    return a
+
+
+def nonterminals(g):
+    return set(g)
+
+
+def rewrite_chains(f):
+    @wraps(f)
+    def inner(g):
+        for nt, chains in g.items():
+            chains = f(chains)
+            if chains is None:
+                del g[nt]
+            else:
+                g[nt] = chains
+    return inner
+
+
+@rewrite_chains
+def remove_empty_rules(chains):
+    return chains or None
+
+
+@rewrite_chains
+def remove_empty_chains(chains):
+    return [chain for chain in chains if chain != (Empty,)]
+
+
+@rewrite_chains
+def dedupe_chains(chains):
+    return list(set(chains))
+
+
+@rewrite_chains
+def strip_nulls(chains):
+    rv = set()
+    for chain in chains:
+        for i, rule in enumerate(chain):
+            if rule is not Null:
+                break
+        rv.add(chain[i:])
+    return list(rv)
+
+
+def heads(g, nt):
+    return set(chain[0] for chain in g[nt] if chain)
+
+
+def derive(self, x, c):
     if isinstance(x, NT):
         return x.increment()
     else:
@@ -40,81 +99,77 @@ def derive(x, c):
         else:
             return Empty
 
-
-class Grammar(object):
-    """
-    A context-free grammar.
-    """
-
-    def __init__(self, alphabet, nonterminals, rules, entry):
-        self.a = set(alphabet)
-        self.n = set(nonterminals)
-        self.r = rules
-        self.n0 = entry
-
-    __repr__ = pretty
-
-    def __pretty__(self, p, cycle):
-        if cycle:
-            p.text("Grammar(...)")
-            return
-
-        with p.group(1, "Grammar(", ")"):
-            p.pretty(self.a)
-            p.text(",")
-            p.breakable()
-
-            p.pretty(self.n)
-            p.text(",")
-            p.breakable()
-
-            p.pretty(self.r)
-            p.text(",")
-            p.breakable()
-
-            p.pretty(self.n0)
-
-    def heads(self, nt):
-        if nt in self.r:
-            return set([chain[0] for chain in self.r[nt]])
-        return set()
-
-    def derivative(self, c):
-        seen = set()
-        stack = [self.n0]
-        while stack:
-            nt = stack.pop()
-            prime = nt.increment()
-            if prime in seen:
-                continue
-            seen.add(prime)
-            chains = self.r[nt]
-            if chains:
-                self.r.setdefault(prime, [])
-            for chain in chains:
-                for rule in chain:
-                    if rule in self.n:
-                        stack.append(rule)
-                chain = [derive(chain[0], c)] + chain[1:]
-                self.r[prime].append(chain)
-        self.n |= seen
-        self.n0 = self.n0.increment()
-
-    def is_null(self, nt):
-        """
-        Calculate nullability of a single non-terminal.
-        """
-
-        heads = set()
-
+def derivative(self, c):
+    seen = set()
+    stack = [self.n0]
+    while stack:
+        nt = stack.pop()
+        prime = nt.increment()
+        if prime in seen:
+            continue
+        seen.add(prime)
         chains = self.r[nt]
+        if chains:
+            self.r.setdefault(prime, [])
         for chain in chains:
-            if len(chain) == 1 and chain[0] is Null:
-                return True
-            elif isinstance(chain[0], NT):
-                heads.add(chain[0])
+            for rule in chain:
+                if rule in self.n:
+                    stack.append(rule)
 
-        return any(self.is_null(x) for x in heads)
+            chain = self.strip_nulls(chain)
+            if chain:
+                chain = [self.derive(chain[0], c)] + chain[1:]
+            else:
+                chain = Empty,
+            self.r[prime].append(chain)
+    self.n |= seen
+    self.n0 = self.n0.increment()
 
-    def nullable(self):
-        return self.is_null(self.n0)
+def prune_empty(self):
+    """
+    Remove any empty rules.
+    """
+
+    changed = True
+    while changed:
+        dropped = set()
+        changed = False
+
+        for head, chains in self.r.iteritems():
+            chains = [chain for chain in chains if Empty not in chain]
+            if not chains:
+                dropped.add(head)
+            else:
+                self.r[head] = chains
+
+        for nt in dropped:
+            del self.r[nt]
+            self.n.discard(nt)
+            changed = True
+
+def is_null(self, nt):
+    """
+    Calculate nullability of a single non-terminal.
+    """
+
+    if not isinstance(nt, NT):
+        return nt is Null
+
+    # Heads with no rules can't possibly be null.
+    if nt not in self.r:
+        return False
+
+    heads = set()
+
+    chains = self.r[nt]
+    for chain in chains:
+        chain = self.strip_nulls(chain)
+        if len(chain) == 1 and chain[0] is Null:
+            return True
+        elif isinstance(chain[0], NT):
+            heads.add(chain[0])
+
+    return any(self.is_null(x) for x in heads)
+
+def nullable(self):
+    return self.is_null(self.n0)
