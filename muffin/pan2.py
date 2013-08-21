@@ -1,3 +1,4 @@
+from collections import defaultdict
 from functools import wraps
 
 from pretty import pretty
@@ -10,7 +11,7 @@ class NT(object):
     A symbol for a sequence of terminals and nonterminals.
     """
 
-    prime = 0
+    chars = ()
 
     def __init__(self, name):
         self.name = name
@@ -18,19 +19,19 @@ class NT(object):
     __repr__ = pretty
 
     def __pretty__(self, p, cycle):
-        p.text(self.name + "`" * self.prime)
+        p.text(self.name + "".join(self.chars))
 
     def __hash__(self):
-        return hash((self.name, self.prime))
+        return hash((self.name, self.chars))
 
     def __eq__(self, other):
         if not isinstance(other, NT):
             return False
-        return self.name == other.name and self.prime == other.prime
+        return self.name == other.name and self.chars == other.chars
 
-    def increment(self):
+    def derivative(self, c):
         n = NT(self.name)
-        n.prime = self.prime + 1
+        n.chars = self.chars + (c,)
         return n
 
 
@@ -75,14 +76,18 @@ def dedupe_chains(chains):
     return list(set(chains))
 
 
+def strip_null_chain(chain):
+    for i, rule in enumerate(chain):
+        if rule is not Null:
+            break
+    return chain[i:]
+
+
 @rewrite_chains
 def strip_nulls(chains):
     rv = set()
     for chain in chains:
-        for i, rule in enumerate(chain):
-            if rule is not Null:
-                break
-        rv.add(chain[i:])
+        rv.add(strip_null_chain(chain))
     return list(rv)
 
 
@@ -90,64 +95,41 @@ def heads(g, nt):
     return set(chain[0] for chain in g[nt] if chain)
 
 
-def derive(self, x, c):
+def derive(x, c):
     if isinstance(x, NT):
-        return x.increment()
+        return x.derivative(c)
     else:
         if x == c:
             return Null
         else:
             return Empty
 
-def derivative(self, c):
+
+def derivative(g, n0, c):
     seen = set()
-    stack = [self.n0]
+    stack = [n0]
+    d = defaultdict(list)
     while stack:
         nt = stack.pop()
-        prime = nt.increment()
+        prime = nt.derivative(c)
         if prime in seen:
             continue
         seen.add(prime)
-        chains = self.r[nt]
-        if chains:
-            self.r.setdefault(prime, [])
+        chains = g[nt]
+
         for chain in chains:
             for rule in chain:
-                if rule in self.n:
+                if rule in nonterminals(g):
                     stack.append(rule)
 
-            chain = self.strip_nulls(chain)
+            chain = strip_null_chain(chain)
             if chain:
-                chain = [self.derive(chain[0], c)] + chain[1:]
-            else:
-                chain = Empty,
-            self.r[prime].append(chain)
-    self.n |= seen
-    self.n0 = self.n0.increment()
+                chain = [derive(chain[0], n0)] + chain[1:]
+                d[prime].append(chain)
+    return dict(d)
 
-def prune_empty(self):
-    """
-    Remove any empty rules.
-    """
 
-    changed = True
-    while changed:
-        dropped = set()
-        changed = False
-
-        for head, chains in self.r.iteritems():
-            chains = [chain for chain in chains if Empty not in chain]
-            if not chains:
-                dropped.add(head)
-            else:
-                self.r[head] = chains
-
-        for nt in dropped:
-            del self.r[nt]
-            self.n.discard(nt)
-            changed = True
-
-def is_null(self, nt):
+def is_null(g, nt):
     """
     Calculate nullability of a single non-terminal.
     """
@@ -156,20 +138,21 @@ def is_null(self, nt):
         return nt is Null
 
     # Heads with no rules can't possibly be null.
-    if nt not in self.r:
+    if nt not in g:
         return False
 
     heads = set()
 
-    chains = self.r[nt]
+    chains = g[nt]
     for chain in chains:
-        chain = self.strip_nulls(chain)
+        chain = strip_nulls(chain)
         if len(chain) == 1 and chain[0] is Null:
             return True
         elif isinstance(chain[0], NT):
             heads.add(chain[0])
 
-    return any(self.is_null(x) for x in heads)
+    return any(is_null(x) for x in heads)
+
 
 def nullable(self):
     return self.is_null(self.n0)
