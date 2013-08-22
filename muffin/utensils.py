@@ -20,6 +20,10 @@ def curry_second(x):
     return second
 
 
+def key(args, kwargs):
+    return args, frozenset(kwargs.iteritems())
+
+
 def kleene(bottom):
     """
     Kleene's fixed point.

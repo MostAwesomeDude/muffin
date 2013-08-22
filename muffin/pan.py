@@ -146,6 +146,9 @@ class Empty(Named, PrettyTuple):
     def nullable(self, f):
         return False
 
+    def only_null(self, f):
+        return False
+
     def compact(self):
         return self
 
@@ -167,6 +170,9 @@ class Null(Named, PrettyTuple):
     def nullable(self, f):
         return True
 
+    def only_null(self, f):
+        return True
+
     def compact(self):
         return self
 
@@ -186,6 +192,9 @@ class Any(Named, PrettyTuple):
         return Term(fs([c]))
 
     def nullable(self, f):
+        return False
+
+    def only_null(self, f):
         return False
 
     def compact(self):
@@ -211,6 +220,9 @@ class Term(PrettyTuple, namedtuple("Term", "ts")):
     def nullable(self, f):
         return True
 
+    def only_null(self, f):
+        return True
+
     def compact(self):
         return self
 
@@ -232,6 +244,9 @@ class Ex(PrettyTuple, namedtuple("Ex", "c")):
     def nullable(self, f):
         return False
 
+    def only_null(self, f):
+        return False
+
     def compact(self):
         return self
 
@@ -250,6 +265,9 @@ class Red(PrettyTuple, namedtuple("Red", "l, f")):
         return Red(derivative(self.l, c), self.f)
 
     def nullable(self, f):
+        return f(self.l)
+
+    def only_null(self, f):
         return f(self.l)
 
     def compact(self):
@@ -284,6 +302,9 @@ class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
             return l
 
     def nullable(self, f):
+        return all(f(l) for l in self)
+
+    def only_null(self, f):
         return all(f(l) for l in self)
 
     def compact(self):
@@ -327,6 +348,9 @@ class Alt(PrettyTuple, namedtuple("Alt", "first, second")):
     def nullable(self, f):
         return f(self.first) or f(self.second)
 
+    def only_null(self, f):
+        return all(f(l) for l in self)
+
     def compact(self):
         first = compact(self.first)
         second = compact(self.second)
@@ -365,6 +389,9 @@ class Rep(PrettyTuple, namedtuple("Rep", "l")):
     def nullable(self, f):
         return True
 
+    def only_null(self, f):
+        return False
+
     def compact(self):
         if self.l is Empty:
             return Term(fs())
@@ -391,6 +418,13 @@ def compact(l):
 def nullable(f):
     def inner(l):
         return force(l).nullable(f)
+    return inner
+
+
+@kleene(True)
+def only_null(f):
+    def inner(l):
+        return force(l).only_null(f)
     return inner
 
 
