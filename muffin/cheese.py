@@ -6,7 +6,7 @@ tie(S)
 
 
 def runS():
-    s = "N" + "+N" * 10
+    s = "N" + "+N" * 2
     print matches(S, s)
 
 

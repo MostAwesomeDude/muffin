@@ -253,6 +253,9 @@ class Ex(PrettyTuple, namedtuple("Ex", "c")):
         else:
             return Empty
 
+    def empty(self, f):
+        return False
+
     def nullable(self, f):
         return False
 
@@ -286,10 +289,15 @@ class Red(PrettyTuple, namedtuple("Red", "l, f")):
         return f(self.l)
 
     def compact(self):
-        if isinstance(self.l, Term):
-            return Term(fs(self.f(t) for t in self.l.ts))
-        elif isinstance(self.l, Red):
+        if empty(self.l):
+            return Empty
+
+        if only_null(self.l):
+            return Term(fs(self.f(t) for t in trees(self.l)))
+
+        if isinstance(self.l, Red):
             return Red(compact(self.l.l), compose(self.l.f, self.f))
+
         return Red(compact(self.l), self.f)
 
     def trees(self, f):
@@ -307,8 +315,18 @@ class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
     """
 
     def derivative(self, c):
+        # Do some eager compaction here. Doing the test for emptiness is fine;
+        # at this point, we've been forced and we're gonna do a nullability
+        # test anyway.
+        if empty(self.first):
+            return derivative(self.second, c)
+        # Not so much here, though.
+        if self.second is Empty:
+            return derivative(self.first, c)
+
         l = Cat(lazy(derivative, self.first, c), self.second)
 
+        # Add in the second part if the first part's nullable.
         if nullable(self.first):
             terms = Term(trees(self.first))
             partial = Cat(terms, lazy(derivative, self.second, c))
@@ -329,22 +347,24 @@ class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
         if Empty in self:
             return Empty
 
-        first = compact(self.first)
-        second = compact(self.second)
+        first = self.first
+        second = self.second
 
-        if isinstance(self.first, Term):
-            ts = self.first.ts
+        if only_null(first):
+            ts = trees(first)
             if not ts:
                 return Red(second, curry_first(None))
             elif len(ts) == 1:
                 return Red(second, curry_first(list(ts)[0]))
-        if isinstance(self.second, Term):
-            ts = self.second.ts
+
+        if only_null(second):
+            ts = trees(second)
             if not ts:
                 return Red(first, curry_second(None))
             elif len(ts) == 1:
                 return Red(first, curry_second(list(ts)[0]))
-        return Cat(first, second)
+
+        return Cat(compact(first), compact(second))
 
     def trees(self, f):
         return fs((x, y) for x in f(self.first) for y in f(self.second))
@@ -360,6 +380,12 @@ class Alt(PrettyTuple, namedtuple("Alt", "first, second")):
     """
 
     def derivative(self, c):
+        # Do some on-the-fly compaction.
+        if self.first is Empty:
+            return lazy(derivative, self.second, c)
+        if self.second is Empty:
+            return lazy(derivative, self.first, c)
+
         return Alt(lazy(derivative, self.first, c),
                    lazy(derivative, self.second, c))
 
@@ -373,14 +399,15 @@ class Alt(PrettyTuple, namedtuple("Alt", "first, second")):
         return all(f(l) for l in self)
 
     def compact(self):
-        first = compact(self.first)
-        second = compact(self.second)
-        if first is Empty:
-            return second
-        elif second is Empty:
-            return first
-        else:
-            return Alt(first, second)
+        first = self.first
+        second = self.second
+
+        if empty(first):
+            return compact(second)
+        if empty(second):
+            return compact(first)
+
+        return Alt(compact(first), compact(second))
 
     def trees(self, f):
         return f(self.first) | f(self.second)
@@ -397,6 +424,10 @@ class Rep(PrettyTuple, namedtuple("Rep", "l")):
     """
 
     def derivative(self, c):
+        # Do some eager compaction.
+        if self.l is Empty:
+            return Empty
+
         def repeat(xy):
             x, y = xy
             if y is None:
@@ -413,15 +444,10 @@ class Rep(PrettyTuple, namedtuple("Rep", "l")):
     def nullable(self, f):
         return True
 
-    def nullable(self, f):
-        return True
-
     def only_null(self, f):
         return False
 
     def compact(self):
-        if self.l is Empty:
-            return Term(fs())
         return Rep(compact(self.l))
 
     def trees(self, f):
@@ -436,6 +462,15 @@ def derivative(l, c):
 @memo
 def compact(l):
     try:
+        l = force(l)
+
+        # Let's try some agnostic tests before we resort to unsafer recursion.
+        if empty(l):
+            return Empty
+        if only_null(l):
+            # Be aggressive and return a partial parse.
+            return Term(trees(l))
+
         return force(l).compact()
     except Recursion:
         return l
