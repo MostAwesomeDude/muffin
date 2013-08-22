@@ -143,6 +143,9 @@ class Empty(Named, PrettyTuple):
     def derivative(self, c):
         return self
 
+    def empty(self, f):
+        return True
+
     def nullable(self, f):
         return False
 
@@ -167,6 +170,9 @@ class Null(Named, PrettyTuple):
     def derivative(self, c):
         return Empty
 
+    def empty(self, f):
+        return False
+
     def nullable(self, f):
         return True
 
@@ -190,6 +196,9 @@ class Any(Named, PrettyTuple):
 
     def derivative(self, c):
         return Term(fs([c]))
+
+    def empty(self, f):
+        return False
 
     def nullable(self, f):
         return False
@@ -216,6 +225,9 @@ class Term(PrettyTuple, namedtuple("Term", "ts")):
 
     def derivative(self, c):
         return Empty
+
+    def empty(self, f):
+        return False
 
     def nullable(self, f):
         return True
@@ -264,6 +276,9 @@ class Red(PrettyTuple, namedtuple("Red", "l, f")):
     def derivative(self, c):
         return Red(derivative(self.l, c), self.f)
 
+    def empty(self, f):
+        return f(self.l)
+
     def nullable(self, f):
         return f(self.l)
 
@@ -300,6 +315,9 @@ class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
             return Alt(l, partial)
         else:
             return l
+
+    def empty(self, f):
+        return any(f(l) for l in self)
 
     def nullable(self, f):
         return all(f(l) for l in self)
@@ -345,6 +363,9 @@ class Alt(PrettyTuple, namedtuple("Alt", "first, second")):
         return Alt(lazy(derivative, self.first, c),
                    lazy(derivative, self.second, c))
 
+    def empty(self, f):
+        return all(f(l) for l in self)
+
     def nullable(self, f):
         return f(self.first) or f(self.second)
 
@@ -386,6 +407,12 @@ class Rep(PrettyTuple, namedtuple("Rep", "l")):
         # yet be forced. Remember that Rep is lazy too!
         return Red(Cat(lazy(derivative, self.l, c), self), repeat)
 
+    def empty(self, f):
+        return f(self.l)
+
+    def nullable(self, f):
+        return True
+
     def nullable(self, f):
         return True
 
@@ -412,6 +439,13 @@ def compact(l):
         return force(l).compact()
     except Recursion:
         return l
+
+
+@kleene(True)
+def empty(f):
+    def inner(l):
+        return force(l).empty(f)
+    return inner
 
 
 @kleene(False)
