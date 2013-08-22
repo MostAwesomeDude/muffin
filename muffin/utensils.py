@@ -53,3 +53,12 @@ def kleene(bottom):
             return f(z)
         return second(second)
     return first
+
+
+def once(f):
+    cache = [None]
+    def once(self, g):
+        if cache[0] is None:
+            cache[0] = f(self, g)
+        return cache[0]
+    return once
