@@ -3,7 +3,7 @@ from functools import wraps
 
 from pretty import pretty
 
-from muffin.utensils import compose, curry_first, curry_second, kleene
+from muffin.utensils import compose, curry_first, kleene
 
 
 fs = frozenset
@@ -354,12 +354,20 @@ class Alt(PrettyTuple, namedtuple("Alt", "first, second")):
 
     def derivative(self, c):
         # Do some compaction.
-        if empty(self.first):
-            return lazyd(self.second, c)
-        if empty(self.second):
-            return lazyd(self.first, c)
+        fd = lazyd(self.first, c)
+        sd = lazyd(self.second, c)
 
-        return Alt(lazyd(self.first, c), lazyd(self.second, c))
+        if empty(self.first):
+            return sd
+        if empty(self.second):
+            return fd
+
+        if fd is Empty:
+            return sd
+        if sd is Empty:
+            return fd
+
+        return Alt(fd, sd)
 
     def empty(self, f):
         return all(f(l) for l in self)

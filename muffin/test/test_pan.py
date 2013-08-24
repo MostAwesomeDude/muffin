@@ -29,7 +29,7 @@ class TestDerivative(TestCase):
     def test_alt_many_matching(self):
         l = Alt(Ex("a"), Ex("b"))
         c = "a"
-        expected = Alt(Term(fs(["a"])), Empty)
+        expected = Term(fs(["a"]))
         self.assertEqual(derivative(l, c), expected)
 
 
