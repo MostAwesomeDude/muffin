@@ -99,16 +99,16 @@ def could_be_lazy(value):
     return isinstance(value, (Lazy, Alt, Cat, Rep))
 
 
-def lazy(f, *args):
+def lazyd(*args):
     """
-    Make a lazy object if necessary.
+    Lazily compute a derivative
 
     Only makes lazy objects if the arguments need to be lazily handled.
     """
 
     if any(could_be_lazy(arg) for arg in args):
-        return Lazy(f, *args)
-    return f(*args)
+        return Lazy(derivative, *args)
+    return derivative(*args)
 
 
 class PrettyTuple(object):
@@ -311,7 +311,7 @@ class Cat(PrettyTuple, namedtuple("Cat", "first, second")):
             return Empty
 
         fd = derivative(self.first, c)
-        sd = lazy(derivative, self.second, c)
+        sd = lazyd(self.second, c)
 
         l = Cat(fd, self.second)
 
@@ -355,12 +355,11 @@ class Alt(PrettyTuple, namedtuple("Alt", "first, second")):
     def derivative(self, c):
         # Do some compaction.
         if empty(self.first):
-            return lazy(derivative, self.second, c)
+            return lazyd(self.second, c)
         if empty(self.second):
-            return lazy(derivative, self.first, c)
+            return lazyd(self.first, c)
 
-        return Alt(lazy(derivative, self.first, c),
-                   lazy(derivative, self.second, c))
+        return Alt(lazyd(self.first, c), lazyd(self.second, c))
 
     def empty(self, f):
         return all(f(l) for l in self)
@@ -398,7 +397,7 @@ class Rep(PrettyTuple, namedtuple("Rep", "l")):
 
         # Cat needs to be lazy here too, since the inner language might not
         # yet be forced. Remember that Rep is lazy too!
-        return Red(Cat(lazy(derivative, self.l, c), self), repeat)
+        return Red(Cat(lazyd(self.l, c), self), repeat)
 
     def empty(self, f):
         return f(self.l)
@@ -459,7 +458,7 @@ def length(f):
 def cd(l, c):
     print "~ Derivative for", repr(c)
     d = derivative(l, c)
-    print d
+    # print d
     print "~ Size:", length(d)
     return d
 

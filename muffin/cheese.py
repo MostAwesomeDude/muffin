@@ -6,7 +6,9 @@ tie(S)
 
 
 def runS():
-    s = "N" + "+N" * 2
+    s = "N" + "+N" * 10
+    print matches(S, s)
+    s = "N" + "+N" * 9 + "++N"
     print matches(S, s)
 
 
@@ -14,6 +16,12 @@ B = Alt(Null,
         Cat(Lazy(const, Patch), Cat(Ex("("), Cat(Lazy(const, Patch),
             Ex(")")))))
 tie(B)
+
+
+def runBs():
+    s = "()"
+    print matches(B, s)
+    print parses(B, s)
 
 
 def runB():
