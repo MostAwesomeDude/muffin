@@ -1,7 +1,6 @@
 from unittest import TestCase
 
-from muffin.pan import (compact, derivative, parses, Alt, Any, Empty, Ex, Rep,
-                        Term)
+from muffin.pan import derivative, parses, Alt, Any, Empty, Ex, Rep, Term
 
 
 fs = frozenset
@@ -32,19 +31,6 @@ class TestDerivative(TestCase):
         c = "a"
         expected = Alt(Term(fs(["a"])), Empty)
         self.assertEqual(derivative(l, c), expected)
-
-
-class TestCompact(TestCase):
-
-    def test_alt_many_empty(self):
-        l = Alt(Term(fs(["a"])), Alt(Empty, Empty))
-        expected = Term(fs(["a"]))
-        self.assertEqual(compact(l), expected)
-
-    def test_alt_some_empty(self):
-        l = Alt(Term(fs(["a"])), Alt(Term(fs(["b"])), Empty))
-        expected = Alt(Term(fs(["a"])), Term(fs(["b"])))
-        self.assertEqual(compact(l), expected)
 
 
 class TestParse(TestCase):
