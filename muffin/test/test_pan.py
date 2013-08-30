@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from muffin.pan import derivative, parses, Alt, Any, Empty, Ex, Rep, Term
+from muffin.pan import derivative, parses, Alt, Any, Empty, Ex, Rep, Set, Term
 
 
 fs = frozenset
@@ -22,6 +22,18 @@ class TestDerivative(TestCase):
 
     def test_exactly_mismatch(self):
         l = Ex("c")
+        c = "d"
+        expected = Empty
+        self.assertEqual(derivative(l, c), expected)
+
+    def test_set_matching(self):
+        l = Set("abc")
+        c = "c"
+        expected = Term(fs(["c"]))
+        self.assertEqual(derivative(l, c), expected)
+
+    def test_set_mismatch(self):
+        l = Set("abc")
         c = "d"
         expected = Empty
         self.assertEqual(derivative(l, c), expected)

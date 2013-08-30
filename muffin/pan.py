@@ -253,6 +253,30 @@ class Ex(PrettyTuple, namedtuple("Ex", "c")):
         return fs()
 
 
+class Set(PrettyTuple, namedtuple("Set", "s")):
+    """
+    Any member of a container of terminals.
+    """
+
+    def derivative(self, c):
+        if c in self.s:
+            return Term(fs([c]))
+        else:
+            return Empty
+
+    def empty(self, f):
+        return False
+
+    def nullable(self, f):
+        return False
+
+    def only_null(self, f):
+        return False
+
+    def trees(self, f):
+        return fs()
+
+
 class Red(PrettyTuple, namedtuple("Red", "l, f")):
     """
     A reduction on languages.
