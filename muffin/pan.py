@@ -507,13 +507,17 @@ def matches(l, s):
     return nullable(l)
 
 
-def patch(lazy, obj):
+def patch(lazy, names):
     f, args = lazy._thunk
-    if Patch in args:
-        lazy.value = obj
+    if args[0] is Patch:
+        lazy.value = names[args[1]]
 
 
-def tie(obj):
+def rec(name):
+    return Lazy(lambda x: x, Patch, name)
+
+
+def tie(obj, names):
     s = [obj]
     while s:
         node = s.pop()
@@ -521,6 +525,6 @@ def tie(obj):
             continue
         for item in node:
             if isinstance(item, Lazy):
-                patch(item, obj)
+                patch(item, names)
             elif item is not obj:
                 s.append(item)
