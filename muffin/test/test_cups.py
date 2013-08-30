@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from muffin.cups import Optional, String
+from muffin.cups import Optional, Sep, String
 from muffin.pan import parses, Cat, Ex
 
 
@@ -31,6 +31,27 @@ class TestOptional(TestCase):
         l = Cat(Ex("a"), Optional(Ex("b")))
         i = "a"
         e = set([("a", None)])
+        self.assertEqual(parses(l, i), e)
+
+
+class TestSep(TestCase):
+
+    def test_one(self):
+        l = Sep(Ex("a"), Ex(","))
+        i = "a"
+        e = fs([("a",)])
+        self.assertEqual(parses(l, i), e)
+
+    def test_two(self):
+        l = Sep(Ex("a"), Ex(","))
+        i = "a,a"
+        e = fs([("a", "a")])
+        self.assertEqual(parses(l, i), e)
+
+    def test_three(self):
+        l = Sep(Ex("a"), Ex(","))
+        i = "a,a,a"
+        e = fs([("a", "a", "a")])
         self.assertEqual(parses(l, i), e)
 
 
