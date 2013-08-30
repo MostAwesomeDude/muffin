@@ -41,7 +41,8 @@ def Sep(l, s):
     To get a zero-or-more version, use Optional() around this combinator.
     """
 
-    return Cat(l, Rep(Cat(s, l)))
+    return Red(Cat(l, Rep(Red(Cat(s, l), lambda (x, y): y))),
+               lambda (car, cdr): (car,) + cdr if cdr else (car,))
 
 
 def Any(ls):
