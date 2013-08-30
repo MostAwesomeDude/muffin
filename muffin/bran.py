@@ -1,9 +1,8 @@
-from muffin.cups import Any, AnyOf, Bracket
-from muffin.pan import Cat, Ex, Rep
+from muffin.cups import Any, Bracket
+from muffin.pan import Cat, Ex, Rep, Set
 
 
-# char = AnyOf("abcdefhijklmnopqrstuvwxyz")
-char = AnyOf("abc")
+char = Set("abcdefhijklmnopqrstuvwxyz")
 
 charset = Bracket(Ex("["), Ex("]"))(char)
 

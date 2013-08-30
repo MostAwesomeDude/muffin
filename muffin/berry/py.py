@@ -1,5 +1,5 @@
-from muffin.cups import Any, AnyOf
-from muffin.pan import Alt, Cat, Ex, Red, Rep
+from muffin.cups import Any
+from muffin.pan import Alt, Cat, Ex, Red, Rep, Set
 
 
 BC, BO, COLON, SC, SO, PC, PO, SEMICOLON = range(8)
@@ -23,8 +23,8 @@ po = Token(Ex("("), PO)
 semicolon = Token(Ex(";"), SEMICOLON)
 
 
-digit = AnyOf("1234567890")
-alpha = AnyOf("abcdefhijklmnopqrstuvwxyzABCDEFHIJKLMNOPQRSTUVWXYZ")
+digit = Set("1234567890")
+alpha = Set("abcdefhijklmnopqrstuvwxyzABCDEFHIJKLMNOPQRSTUVWXYZ")
 alphanum = Alt(alpha, digit)
 identifier = Cat(alpha, Rep(alphanum))
 
