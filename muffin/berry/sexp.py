@@ -16,12 +16,14 @@ def OneOrMore(l):
 po = Ex("(")
 pc = Ex(")")
 
-character = Set(string.letters + string.digits + string.punctuation)
-name = OneOrMore(character)
+acceptable = string.letters + string.digits + "!@#$%^&*"
+
+character = Set(acceptable)
+name = Red(OneOrMore(character), lambda cs: "".join(cs))
 obj = Alt(rec("sexp"), name)
 whitespace = Red(OneOrMore(Ex(" ")), lambda _: None)
 contents = Sep(obj, whitespace)
 
-sexp = All([po, contents, pc])
+sexp = Red(All([po, contents, pc]), lambda ((_, objs), __): tuple(objs))
 
 tie(obj, {"sexp": sexp})
