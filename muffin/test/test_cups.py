@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from muffin.cups import AnyOf, Optional, String
-from muffin.pan import matches, parses, Cat, Ex
+from muffin.cups import Optional, String
+from muffin.pan import parses, Cat, Ex
 
 
 fs = frozenset
@@ -64,24 +64,4 @@ class TestString(TestCase):
         l = String("abc")
         i = "abd"
         e = set()
-        self.assertEqual(parses(l, i), e)
-
-
-class TestAnyOf(TestCase):
-
-    def test_single(self):
-        l = AnyOf("a")
-        i = "a"
-        e = fs(["a"])
-        self.assertEqual(parses(l, i), e)
-
-    def test_single_fail(self):
-        l = AnyOf("a")
-        i = "b"
-        self.assertFalse(matches(l, i))
-
-    def test_multiple(self):
-        l = AnyOf("abc")
-        i = "b"
-        e = fs(["b"])
         self.assertEqual(parses(l, i), e)

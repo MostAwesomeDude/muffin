@@ -70,14 +70,6 @@ def All(ls):
     return parser
 
 
-def AnyOf(s):
-    """
-    Match any member of the given sequence.
-    """
-
-    return Any(map(Ex, s))
-
-
 def String(s):
     """
     Match every member of the string in turn, returning the entire string.

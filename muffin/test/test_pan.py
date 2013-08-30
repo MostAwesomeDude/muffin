@@ -38,6 +38,18 @@ class TestDerivative(TestCase):
         expected = Empty
         self.assertEqual(derivative(l, c), expected)
 
+    def test_set_single(self):
+        l = Set("a")
+        c = "a"
+        expected = Term(fs(["a"]))
+        self.assertEqual(derivative(l, c), expected)
+
+    def test_set_fail(self):
+        l = Set("a")
+        c = "b"
+        expected = Empty
+        self.assertEqual(derivative(l, c), expected)
+
     def test_alt_many_matching(self):
         l = Alt(Ex("a"), Ex("b"))
         c = "a"
