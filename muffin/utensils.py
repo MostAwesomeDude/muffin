@@ -5,6 +5,7 @@ def const(x):
 def compose(f, g):
     def h(x):
         return g(f(x))
+    h.__name__ = "compose(%s, %s)" % (f.__name__, g.__name__)
     return h
 
 
