@@ -63,3 +63,19 @@ def once(f):
             cache[0] = f(self, g)
         return cache[0]
     return once
+
+
+def inub(iterable):
+    """
+    Go through an iterable, only yielding items that have not been seen yet.
+
+    Uses quadratic time and linear space in exchange for being lazy and not
+    using hashing.
+    """
+
+    seen = []
+
+    for item in iter(iterable):
+        if item not in seen:
+            seen.append(item)
+            yield item
